@@ -1,0 +1,23 @@
+{
+  "name": "校园点餐 - 商家端",
+  "short_name": "商家管理",
+  "description": "校园在线点餐系统 - 商家管理版",
+  "start_url": "/merchant.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#2D3436",
+  "background_color": "#F5F5F5",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/merchant-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/merchant-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

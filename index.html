@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>校园点餐</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .landing-page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 40px 20px;
+      text-align: center;
+      background: linear-gradient(135deg, #FFF8F5 0%, #F5F5F5 50%, #EDF2F7 100%);
+    }
+    .landing-logo {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+    .landing-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: #2D3436;
+      margin-bottom: 8px;
+    }
+    .landing-subtitle {
+      font-size: 14px;
+      color: #636E72;
+      margin-bottom: 40px;
+    }
+    .landing-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+      max-width: 360px;
+    }
+    .landing-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      border: 1.5px solid transparent;
+    }
+    .landing-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    }
+    .landing-card.customer {
+      border-color: #FF6B35;
+    }
+    .landing-card.merchant {
+      border-color: #2D3436;
+    }
+    .landing-card-icon {
+      font-size: 48px;
+    }
+    .landing-card-title {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .landing-card-desc {
+      font-size: 13px;
+      color: #636E72;
+    }
+    .landing-card-badge {
+      font-size: 11px;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+    .landing-card.customer .landing-card-badge {
+      background: #FFF0EB;
+      color: #FF6B35;
+    }
+    .landing-card.merchant .landing-card-badge {
+      background: #EDF2F7;
+      color: #2D3436;
+    }
+    .install-tip {
+      margin-top: 32px;
+      padding: 16px 20px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      max-width: 360px;
+      width: 100%;
+    }
+    .install-tip-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #2D3436;
+    }
+    .install-tip-steps {
+      font-size: 12px;
+      color: #636E72;
+      line-height: 1.8;
+      text-align: left;
+    }
+    .install-tip-steps strong {
+      color: #FF6B35;
+    }
+    .footer {
+      margin-top: 32px;
+      font-size: 11px;
+      color: #B2BEC3;
+    }
+  </style>
+</head>
+<body>
+  <div class="landing-page">
+    <div class="landing-logo">🍽️</div>
+    <div class="landing-title">校园点餐</div>
+    <div class="landing-subtitle">一个App，搞定点餐和接单</div>
+
+    <div class="landing-cards">
+      <a href="customer.html" class="landing-card customer">
+        <div class="landing-card-icon">🛒</div>
+        <div class="landing-card-title">顾客版</div>
+        <div class="landing-card-desc">浏览菜单 · 下单点餐 · 管理地址</div>
+        <span class="landing-card-badge">我是顾客</span>
+      </a>
+
+      <a href="merchant.html" class="landing-card merchant">
+        <div class="landing-card-icon">📋</div>
+        <div class="landing-card-title">商家版</div>
+        <div class="landing-card-desc">接单管理 · 菜单编辑 · 订单追踪</div>
+        <span class="landing-card-badge">我是商家</span>
+      </a>
+    </div>
+
+    <div class="install-tip">
+      <div class="install-tip-title">如何安装到手机桌面？</div>
+      <div class="install-tip-steps">
+        <strong>iPhone / iPad：</strong>用 Safari 打开 → 点击底部 <strong>分享按钮</strong> → <strong>添加到主屏幕</strong><br>
+        <strong>Android：</strong>用 Chrome 打开 → 点击右上角 <strong>⋮</strong> → <strong>添加到主屏幕</strong><br>
+        <strong>电脑：</strong>Chrome 地址栏右侧会出现 <strong>安装图标 ⊕</strong>
+      </div>
+    </div>
+
+    <div class="footer">校园点餐 · PWA App</div>
+  </div>
+</body>
+</html>

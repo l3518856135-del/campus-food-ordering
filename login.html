@@ -135,6 +135,62 @@
     .hidden {
       display: none !important;
     }
+    /* 角色选择弹窗 */
+    .role-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .role-overlay.show {
+      display: flex;
+    }
+    .role-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 32px 24px;
+      width: 85%;
+      max-width: 320px;
+      text-align: center;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    }
+    .role-card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #2D3436;
+      margin-bottom: 8px;
+    }
+    .role-card-subtitle {
+      font-size: 13px;
+      color: #636E72;
+      margin-bottom: 24px;
+    }
+    .role-btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      margin-bottom: 12px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .role-btn:active {
+      transform: scale(0.97);
+    }
+    .role-btn-merchant {
+      background: #2D3436;
+      color: #fff;
+    }
+    .role-btn-customer {
+      background: #FF6B35;
+      color: #fff;
+    }
   </style>
 </head>
 <body>
@@ -172,6 +228,16 @@
         首次使用请先注册<br>
         商家账号请联系管理员开通
       </div>
+    </div>
+  </div>
+
+  <!-- 角色选择弹窗 -->
+  <div class="role-overlay" id="roleOverlay">
+    <div class="role-card">
+      <div class="role-card-title">选择身份</div>
+      <div class="role-card-subtitle">你的账号同时拥有商家和顾客权限</div>
+      <button class="role-btn role-btn-merchant" id="btnGoMerchant">📋 进入商家版</button>
+      <button class="role-btn role-btn-customer" id="btnGoCustomer">🛒 进入顾客版</button>
     </div>
   </div>
 
@@ -214,7 +280,7 @@
         if (currentTab === 'login') {
           const user = await apiLogin(phone, password);
           if (user.role === 'merchant') {
-            window.location.href = 'merchant.html';
+            showRoleSelector();
           } else {
             window.location.href = 'customer.html';
           }
@@ -232,6 +298,21 @@
     // 回车提交
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') document.getElementById('btnSubmit').click();
+    });
+
+    // 角色选择弹窗
+    function showRoleSelector() {
+      document.getElementById('btnSubmit').disabled = false;
+      document.getElementById('btnSubmit').textContent = '登录';
+      document.getElementById('roleOverlay').classList.add('show');
+    }
+
+    document.getElementById('btnGoMerchant').addEventListener('click', () => {
+      window.location.href = 'merchant.html';
+    });
+
+    document.getElementById('btnGoCustomer').addEventListener('click', () => {
+      window.location.href = 'customer.html';
     });
   </script>
 </body>

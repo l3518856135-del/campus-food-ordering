@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>校园点餐 - 顾客端</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ==================== 头部 ==================== -->
+  <header class="header" id="header">
+    <button class="header-back" id="btnBack" style="display:none;">&#8592;</button>
+    <span class="header-title" id="headerTitle">校园点餐</span>
+    <div class="header-actions">
+      <button class="header-addr-btn" id="btnAddrManage" title="管理收货地址">📍</button>
+      <a href="merchant.html" style="color:#fff;text-decoration:none;font-size:13px;opacity:0.85;">商家端</a>
+    </div>
+  </header>
+
+  <!-- ==================== 区域导航 ==================== -->
+  <nav class="area-nav" id="areaNav">
+    <!-- JS动态渲染 -->
+  </nav>
+
+  <!-- ==================== 页面容器 ==================== -->
+  <!-- 店铺列表页 -->
+  <div class="page active" id="pageStores">
+    <div class="store-list" id="storeList">
+      <!-- JS动态渲染 -->
+    </div>
+  </div>
+
+  <!-- 菜单页 -->
+  <div class="page" id="pageMenu">
+    <div class="category-nav" id="categoryNav">
+      <!-- JS动态渲染 -->
+    </div>
+    <div class="menu-items" id="menuItems">
+      <!-- JS动态渲染 -->
+    </div>
+  </div>
+
+  <!-- 地址管理页 -->
+  <div class="page" id="pageAddress">
+    <div id="addressList" style="padding:12px 16px 80px;">
+      <!-- JS动态渲染 -->
+    </div>
+  </div>
+
+  <!-- ==================== 购物车底部栏 ==================== -->
+  <div class="cart-bar" id="cartBar">
+    <div class="cart-bar-info" id="cartBarInfo">
+      <div class="cart-bar-icon">
+        &#128722;
+        <span class="cart-bar-badge" id="cartBadge" style="display:none;">0</span>
+      </div>
+      <div class="cart-bar-total">
+        <span style="font-size:11px;">共</span>
+        <span class="cart-bar-text" id="cartTotal">0</span>
+        <span style="font-size:11px;">件</span>
+      </div>
+    </div>
+    <button class="cart-bar-btn" id="btnCheckout">去下单</button>
+  </div>
+
+  <!-- ==================== 购物车弹窗 ==================== -->
+  <div class="cart-modal-overlay" id="cartModal" style="display:none;">
+    <div class="cart-modal">
+      <div class="cart-modal-header">
+        <span class="cart-modal-title">购物车</span>
+        <button class="cart-modal-clear" id="btnClearCart">清空</button>
+      </div>
+      <div class="cart-modal-body" id="cartBody">
+        <!-- JS动态渲染 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 提交订单弹窗 ==================== -->
+  <div class="order-modal-overlay" id="orderModal" style="display:none;">
+    <div class="order-modal">
+      <div class="order-modal-title">确认订单</div>
+      <div class="order-summary" id="orderSummary">
+        <!-- JS动态渲染 -->
+      </div>
+
+      <!-- 收货地址选择 -->
+      <div class="order-form-group">
+        <label class="order-form-label">收货地址</label>
+        <div class="addr-select-card" id="selectedAddrCard" onclick="showAddrPicker()">
+          <div class="addr-select-placeholder" id="addrPlaceholder">
+            <span>📍 请选择收货地址</span>
+            <span class="store-arrow">›</span>
+          </div>
+          <div class="addr-select-info" id="addrSelectInfo" style="display:none;">
+            <div class="addr-select-top">
+              <span class="addr-select-name" id="addrSelectName"></span>
+              <span class="addr-select-phone" id="addrSelectPhone"></span>
+            </div>
+            <div class="addr-select-dorm" id="addrSelectDorm"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 备注 -->
+      <div class="order-form-group">
+        <label class="order-form-label">备注（选填）</label>
+        <textarea class="order-form-textarea" id="orderNote" placeholder="如：不要辣、多加醋..."></textarea>
+      </div>
+
+      <button class="order-submit-btn" id="btnSubmitOrder">确认下单</button>
+      <button class="btn btn-outline" style="width:100%;margin-top:8px;" id="btnCancelOrder">取消</button>
+    </div>
+  </div>
+
+  <!-- ==================== 地址选择器弹窗 ==================== -->
+  <div class="order-modal-overlay" id="addrPickerModal" style="display:none;">
+    <div class="order-modal" style="max-height:80vh;overflow-y:auto;">
+      <div class="order-modal-title">选择收货地址</div>
+      <div id="addrPickerList" style="margin-bottom:12px;">
+        <!-- JS动态渲染 -->
+      </div>
+      <button class="btn btn-primary" style="width:100%;" id="btnAddAddrInPicker">+ 添加新地址</button>
+      <button class="btn btn-outline" style="width:100%;margin-top:8px;" id="btnCloseAddrPicker">取消</button>
+    </div>
+  </div>
+
+  <!-- ==================== 地址编辑弹窗 ==================== -->
+  <div class="order-modal-overlay" id="addrEditModal" style="display:none;">
+    <div class="order-modal">
+      <div class="order-modal-title" id="addrEditTitle">添加收货地址</div>
+      <input type="hidden" id="addrEditId">
+      <div class="order-form-group">
+        <label class="order-form-label">收货人</label>
+        <input class="order-form-input" id="addrEditName" placeholder="请输入收货人姓名" maxlength="15">
+      </div>
+      <div class="order-form-group">
+        <label class="order-form-label">联系电话</label>
+        <input class="order-form-input" id="addrEditPhone" placeholder="请输入联系电话" maxlength="15" type="tel">
+      </div>
+      <div class="order-form-group">
+        <label class="order-form-label">宿舍楼/地址</label>
+        <input class="order-form-input" id="addrEditDorm" placeholder="如：5号楼302" maxlength="30">
+      </div>
+      <div class="order-form-group" style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="addrEditDefault" style="width:18px;height:18px;">
+        <label for="addrEditDefault" style="font-size:13px;color:var(--text-light);">设为默认地址</label>
+      </div>
+      <button class="order-submit-btn" id="btnSaveAddr">保存</button>
+      <button class="btn btn-outline" style="width:100%;margin-top:8px;" id="btnCancelAddrEdit">取消</button>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/customer.js"></script>
+</body>
+</html>

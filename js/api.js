@@ -1,7 +1,7 @@
 // ==================== API 客户端 ====================
 // 所有 API 请求统一通过此模块发送到 Cloudflare Workers
 
-const API_BASE = ''; // 相对路径 = 与前端同域名的 Pages Functions，国内可正常访问
+const API_BASE = 'https://campus-order.pages.dev';
 
 // ==================== Token 管理 ====================
 

@@ -89,6 +89,14 @@ function bindEvents() {
       window.location.href = 'login.html';
     });
   }
+
+  // 切换到顾客版
+  const switchBtn = document.getElementById('btnSwitchToCustomer');
+  if (switchBtn) {
+    switchBtn.addEventListener('click', () => {
+      window.location.href = 'customer.html';
+    });
+  }
 }
 
 // ==================== 渲染全部 ====================

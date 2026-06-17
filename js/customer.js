@@ -14,6 +14,12 @@ async function init() {
     return;
   }
 
+  // 商家账号显示切换按钮
+  const user = getCurrentUser();
+  if (user && user.role === 'merchant') {
+    document.getElementById('btnSwitchToMerchant').style.display = '';
+  }
+
   // 从 API 加载菜单
   await loadMenuFromAPI();
 
@@ -133,6 +139,14 @@ function bindEvents() {
     logoutBtn.addEventListener('click', () => {
       apiLogout();
       window.location.href = 'login.html';
+    });
+  }
+
+  // 切换到商家版
+  const switchBtn = document.getElementById('btnSwitchToMerchant');
+  if (switchBtn) {
+    switchBtn.addEventListener('click', () => {
+      window.location.href = 'merchant.html';
     });
   }
 }

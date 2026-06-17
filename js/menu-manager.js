@@ -1,4 +1,4 @@
-// ==================== 菜单管理逻辑 ====================
+// ==================== 菜单管理逻辑（API 版） ====================
 
 let mgrArea = AREA_ORDER[0];
 let mgrStore = null;
@@ -37,9 +37,9 @@ function bindMgrEvents() {
 
   // 添加店铺
   document.getElementById('btnAddStore').addEventListener('click', () => {
-    showInputModal('添加店铺', '请输入新店铺名称', '', (name) => {
+    showInputModal('添加店铺', '请输入新店铺名称', '', async (name) => {
       if (!name.trim()) return;
-      addStore(mgrArea, name.trim());
+      await addStoreAsync(mgrArea, name.trim());
       updateMgrStoreSelect();
       mgrStore = name.trim();
       document.getElementById('menuStoreSelect').value = mgrStore;
@@ -97,7 +97,6 @@ function renderMenuEditor() {
 
   let html = '';
 
-  // 每个分类
   catNames.forEach(catName => {
     const items = categories[catName] || [];
     html += `
@@ -119,7 +118,6 @@ function renderMenuEditor() {
     `;
   });
 
-  // 添加分类 + 底部操作
   html += `
     <div class="menu-mgr-bottom-bar">
       <button class="btn btn-primary btn-sm" onclick="handleAddCategory()">+ 添加分类</button>
@@ -150,7 +148,6 @@ function renderItemRow(catName, item, idx) {
 
 // ==================== 操作函数 ====================
 
-// 添加菜品
 function handleAddItem(catName) {
   const row = document.getElementById('addRow_' + escJS(catName));
   if (row) {
@@ -163,14 +160,14 @@ function handleAddItem(catName) {
   }
 }
 
-function confirmAddItem(catName) {
+async function confirmAddItem(catName) {
   const input = document.getElementById('addInput_' + escJS(catName));
   const name = input ? input.value.trim() : '';
   if (!name) {
     showToast('请输入菜品名称', 'error');
     return;
   }
-  addMenuItem(mgrArea, mgrStore, catName, name);
+  await addMenuItemAsync(mgrArea, mgrStore, catName, name);
   renderMenuEditor();
   showToast(`已添加：${name}`, 'success');
 }
@@ -180,46 +177,41 @@ function cancelAddItem(catName) {
   if (row) row.style.display = 'none';
 }
 
-// 删除菜品
-function handleDeleteItem(catName, itemName) {
+async function handleDeleteItem(catName, itemName) {
   if (!confirm(`确定要删除菜品 "${itemName}" 吗？`)) return;
-  deleteMenuItem(mgrArea, mgrStore, catName, itemName);
+  await deleteMenuItemAsync(mgrArea, mgrStore, catName, itemName);
   renderMenuEditor();
   showToast(`已删除：${itemName}`, 'info');
 }
 
-// 添加分类
-function handleAddCategory() {
-  showInputModal('添加分类', '请输入新分类名称', '', (name) => {
+async function handleAddCategory() {
+  showInputModal('添加分类', '请输入新分类名称', '', async (name) => {
     if (!name.trim()) return;
-    addCategory(mgrArea, mgrStore, name.trim());
+    await addCategoryAsync(mgrArea, mgrStore, name.trim());
     renderMenuEditor();
     showToast('分类已添加', 'success');
   });
 }
 
-// 删除分类
-function handleDeleteCategory(catName) {
+async function handleDeleteCategory(catName) {
   if (!confirm(`确定要删除分类 "${catName}" 及其所有菜品吗？`)) return;
-  deleteCategory(mgrArea, mgrStore, catName);
+  await deleteCategoryAsync(mgrArea, mgrStore, catName);
   renderMenuEditor();
   showToast(`已删除分类：${catName}`, 'info');
 }
 
-// 删除店铺
-function handleDeleteStore() {
+async function handleDeleteStore() {
   if (!confirm(`确定要删除店铺 "${mgrStore}" 及其所有数据吗？此操作不可恢复！`)) return;
-  deleteStore(mgrArea, mgrStore);
+  await deleteStoreAsync(mgrArea, mgrStore);
   mgrStore = null;
   updateMgrStoreSelect();
   showEmptyEditor();
   showToast('店铺已删除', 'info');
 }
 
-// 重置菜单
-function handleResetMenu() {
+async function handleResetMenu() {
   if (!confirm('确定要重置菜单为默认数据吗？所有自定义修改将丢失！')) return;
-  resetMenuData();
+  await resetMenuDataAsync();
   mgrStore = null;
   updateMgrStoreSelect();
   showEmptyEditor();
@@ -227,29 +219,34 @@ function handleResetMenu() {
 }
 
 // ==================== 图片上传 ====================
-function handleUploadImage(catName, itemName) {
-  // 创建临时文件输入
+async function handleUploadImage(catName, itemName) {
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*';
-  input.onchange = (e) => {
+  input.onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // 检查文件大小（限制 500KB）
-    if (file.size > 500 * 1024) {
-      showToast('图片大小不能超过 500KB，请压缩后重试', 'error');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const base64 = ev.target.result;
-      setItemImage(mgrArea, mgrStore, catName, itemName, base64);
+    // 尝试上传到 API，失败则用 base64 本地存储
+    try {
+      const url = await apiUploadImage(file);
+      await setItemImageAsync(mgrArea, mgrStore, catName, itemName, url);
       renderMenuEditor();
-      showToast(`图片已更新：${itemName}`, 'success');
-    };
-    reader.readAsDataURL(file);
+      showToast(`图片已上传：${itemName}`, 'success');
+    } catch(e) {
+      // 降级：使用 base64
+      if (file.size > 500 * 1024) {
+        showToast('图片大小不能超过 500KB', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        await setItemImageAsync(mgrArea, mgrStore, catName, itemName, ev.target.result);
+        renderMenuEditor();
+        showToast(`图片已更新：${itemName}`, 'success');
+      };
+      reader.readAsDataURL(file);
+    }
   };
   input.click();
 }
@@ -283,7 +280,6 @@ function showInputModal(title, placeholder, defaultValue, onConfirm) {
     modal.style.display = 'none';
   });
 
-  // 回车确认
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       const value = input.value.trim();

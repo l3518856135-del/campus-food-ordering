@@ -1,0 +1,19 @@
+{
+  "name": "campus-food-ordering",
+  "version": "1.0.0",
+  "description": "校园点餐 - 原生 Android App",
+  "main": "index.html",
+  "scripts": {
+    "cap:init": "npx cap init '校园点餐' 'com.campus.order' --web-dir=./",
+    "cap:add:android": "npx cap add android",
+    "cap:sync": "npx cap sync",
+    "cap:open:android": "npx cap open android",
+    "cap:build:android": "cd android && ./gradlew assembleDebug",
+    "cap:run:android": "cd android && ./gradlew installDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^6.2.1"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "appId": "com.campus.order",
+  "appName": "校园点餐",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#F5F5F5"
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

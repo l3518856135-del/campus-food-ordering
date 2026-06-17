@@ -1,0 +1,17 @@
+name = "campus-order-api"
+main = "src/index.ts"
+compatibility_date = "2025-06-01"
+
+# D1 数据库 - 免费额度: 5GB 存储, 50亿行读取/月
+[[d1_databases]]
+binding = "DB"
+database_name = "campus-order-db"
+database_id = "42bdd43a-7491-420b-b099-740cf127b31f"
+
+# 环境变量
+[vars]
+JWT_SECRET = "b8e37b7916365b2bbc8616e124166c9d54b9b107c6cf595bdfa32f2b3b3019ef"
+MERCHANT_PHONE = "17658612608"  # 商家手机号，唯一有商家权限的账号
+
+[env.production]
+# 生产环境配置（部署时自动使用）

@@ -1,4 +1,4 @@
-// ==================== 顾客端逻辑（PWA 版） ====================
+// ==================== 顾客端逻辑（API 版） ====================
 
 let currentArea = AREA_ORDER[0];
 let currentStore = null;
@@ -7,9 +7,21 @@ let selectedAddrId = null;
 let currentPage = 'stores';
 
 // ==================== 初始化 ====================
-function init() {
-  const defAddr = getDefaultAddress();
+async function init() {
+  // 检查登录
+  if (!isLoggedIn()) {
+    window.location.href = 'login.html';
+    return;
+  }
+
+  // 从 API 加载菜单
+  await loadMenuFromAPI();
+
+  // 加载地址
+  const addrs = await getAddressesAsync();
+  const defAddr = addrs.find(a => a.is_default);
   if (defAddr) selectedAddrId = defAddr.id;
+
   renderAreaNav();
   renderStoreList(currentArea);
   updateCartBadge();
@@ -41,11 +53,11 @@ function bindEvents() {
   });
 
   // 地址管理入口
-  document.getElementById('btnAddrManage').addEventListener('click', () => {
+  document.getElementById('btnAddrManage').addEventListener('click', async () => {
     currentStore = null;
     showPage('address');
     updateHeader();
-    renderAddressList();
+    await renderAddressList();
   });
 
   // ========== 底部导航 ==========
@@ -114,6 +126,15 @@ function bindEvents() {
   });
   document.getElementById('btnCancelAddrEdit').addEventListener('click', hideAddrEdit);
   document.getElementById('btnSaveAddr').addEventListener('click', saveAddrEdit);
+
+  // 退出登录
+  const logoutBtn = document.getElementById('btnLogout');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      apiLogout();
+      window.location.href = 'login.html';
+    });
+  }
 }
 
 // ==================== 底部导航 ====================
@@ -143,7 +164,6 @@ function showPage(page) {
   const areaNav = document.getElementById('areaNav');
   areaNav.style.display = (page === 'menu' || page === 'stores') ? 'flex' : 'none';
   if (page === 'address') {
-    areaNav.style.display = 'none';
     updateBottomNav('address');
   } else if (page === 'stores') {
     updateBottomNav('stores');
@@ -167,38 +187,30 @@ function showCartModal() {
   renderCartModal();
   document.getElementById('cartModal').style.display = 'flex';
 }
-
 function hideCartModal() {
   document.getElementById('cartModal').style.display = 'none';
 }
-
-function showOrdersModal() {
-  renderOrdersModal();
+async function showOrdersModal() {
+  await renderOrdersModal();
   document.getElementById('ordersModal').style.display = 'flex';
 }
-
 function hideOrdersModal() {
   document.getElementById('ordersModal').style.display = 'none';
 }
-
-function showOrderModal() {
-  renderOrderModal();
+async function showOrderModal() {
+  await renderOrderModal();
   document.getElementById('orderModal').style.display = 'flex';
 }
-
 function hideOrderModal() {
   document.getElementById('orderModal').style.display = 'none';
 }
-
-function showAddrPicker() {
-  renderAddrPicker();
+async function showAddrPicker() {
+  await renderAddrPicker();
   document.getElementById('addrPickerModal').style.display = 'flex';
 }
-
 function hideAddrPicker() {
   document.getElementById('addrPickerModal').style.display = 'none';
 }
-
 function hideAddrEdit() {
   document.getElementById('addrEditModal').style.display = 'none';
 }
@@ -335,7 +347,7 @@ function changeCartQty(index, delta) {
 }
 
 // ==================== 订单弹窗 ====================
-function renderOrderModal() {
+async function renderOrderModal() {
   const cart = getCart();
   const grouped = {};
   cart.forEach(item => {
@@ -347,12 +359,13 @@ function renderOrderModal() {
     <div style="font-size:11px;color:var(--primary);font-weight:600;margin-top:6px;">${k}</div>
     ${items.map(it => `<div class="order-summary-item"><span>${it.name}</span><span>x${it.quantity}</span></div>`).join('')}
   `).join('');
-  refreshSelectedAddr();
+  await refreshSelectedAddr();
   document.getElementById('orderNote').value = '';
 }
 
-function refreshSelectedAddr() {
-  const addr = getAddresses().find(a => a.id === selectedAddrId);
+async function refreshSelectedAddr() {
+  const addrs = await getAddressesAsync();
+  const addr = addrs.find(a => a.id === selectedAddrId);
   const ph = document.getElementById('addrPlaceholder');
   const info = document.getElementById('addrSelectInfo');
   if (addr) {
@@ -366,9 +379,9 @@ function refreshSelectedAddr() {
 }
 
 // ==================== 地址选择器 ====================
-function renderAddrPicker() {
+async function renderAddrPicker() {
   const container = document.getElementById('addrPickerList');
-  const addresses = getAddresses();
+  const addresses = await getAddressesAsync();
   if (!addresses.length) {
     container.innerHTML = '<div class="empty-state" style="padding:20px;"><div class="empty-state-text">还没有收货地址，请添加</div></div>';
     return;
@@ -379,7 +392,7 @@ function renderAddrPicker() {
         <div class="addr-card-top">
           <span class="addr-card-name">${addr.name}</span>
           <span class="addr-card-phone">${addr.phone}</span>
-          ${addr.isDefault ? '<span class="addr-card-tag">默认</span>' : ''}
+          ${addr.is_default ? '<span class="addr-card-tag">默认</span>' : ''}
         </div>
         <div class="addr-card-dorm">${addr.dorm}</div>
       </div>
@@ -389,17 +402,18 @@ function renderAddrPicker() {
       </div>
     </div>`).join('');
   container.querySelectorAll('.addr-card').forEach(card => {
-    card.addEventListener('click', (e) => {
+    card.addEventListener('click', async (e) => {
       if (e.target.closest('.addr-edit-btn')) return;
       selectedAddrId = card.dataset.addrId;
-      renderAddrPicker();
-      refreshSelectedAddr();
+      await renderAddrPicker();
+      await refreshSelectedAddr();
     });
   });
   container.querySelectorAll('.addr-edit-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      const addr = getAddresses().find(a => a.id === btn.dataset.addrId);
+      const addrs = await getAddressesAsync();
+      const addr = addrs.find(a => a.id === btn.dataset.addrId);
       if (addr) showAddrEdit(addr);
     });
   });
@@ -413,11 +427,11 @@ function showAddrEdit(addr) {
   document.getElementById('addrEditName').value = isEdit ? addr.name : '';
   document.getElementById('addrEditPhone').value = isEdit ? addr.phone : '';
   document.getElementById('addrEditDorm').value = isEdit ? addr.dorm : '';
-  document.getElementById('addrEditDefault').checked = isEdit ? addr.isDefault : false;
+  document.getElementById('addrEditDefault').checked = isEdit ? addr.is_default : false;
   document.getElementById('addrEditModal').style.display = 'flex';
 }
 
-function saveAddrEdit() {
+async function saveAddrEdit() {
   const id = document.getElementById('addrEditId').value;
   const name = document.getElementById('addrEditName').value.trim();
   const phone = document.getElementById('addrEditPhone').value.trim();
@@ -426,23 +440,28 @@ function saveAddrEdit() {
   if (!name) { showToast('请输入收货人姓名', 'error'); return; }
   if (!phone) { showToast('请输入联系电话', 'error'); return; }
   if (!dorm) { showToast('请输入宿舍楼/地址', 'error'); return; }
-  if (id) {
-    updateAddress(id, { name, phone, dorm, isDefault });
-  } else {
-    const newAddr = addAddress({ name, phone, dorm, isDefault });
-    selectedAddrId = newAddr.id;
+
+  try {
+    if (id) {
+      await updateAddressAsync(id, { name, phone, dorm, isDefault });
+    } else {
+      const res = await addAddressAsync({ name, phone, dorm, isDefault });
+      selectedAddrId = res.id;
+    }
+    hideAddrEdit();
+    await refreshSelectedAddr();
+    await renderAddrPicker();
+    if (document.getElementById('pageAddress').classList.contains('active')) await renderAddressList();
+    showToast(id ? '地址已更新' : '地址已添加', 'success');
+  } catch(e) {
+    showToast(e.message, 'error');
   }
-  hideAddrEdit();
-  refreshSelectedAddr();
-  renderAddrPicker();
-  if (document.getElementById('pageAddress').classList.contains('active')) renderAddressList();
-  showToast(id ? '地址已更新' : '地址已添加', 'success');
 }
 
 // ==================== 地址管理页 ====================
-function renderAddressList() {
+async function renderAddressList() {
   const container = document.getElementById('addressList');
-  const addresses = getAddresses();
+  const addresses = await getAddressesAsync();
   if (!addresses.length) {
     container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📍</div><div class="empty-state-text">还没有收货地址</div><button class="btn btn-primary" style="margin-top:16px;" onclick="showAddrEdit(null)">添加收货地址</button></div>';
     return;
@@ -451,11 +470,11 @@ function renderAddressList() {
   addresses.forEach(addr => {
     html += `<div class="addr-manage-card">
       <div class="addr-manage-body">
-        <div class="addr-manage-top"><span class="addr-manage-name">${addr.name}</span><span class="addr-manage-phone">${addr.phone}</span>${addr.isDefault ? '<span class="addr-card-tag">默认</span>' : ''}</div>
+        <div class="addr-manage-top"><span class="addr-manage-name">${addr.name}</span><span class="addr-manage-phone">${addr.phone}</span>${addr.is_default ? '<span class="addr-card-tag">默认</span>' : ''}</div>
         <div class="addr-manage-dorm">${addr.dorm}</div>
       </div>
       <div class="addr-manage-actions">
-        ${!addr.isDefault ? `<button class="btn btn-outline btn-sm" onclick="handleSetDefault('${addr.id}')">设为默认</button>` : ''}
+        ${!addr.is_default ? `<button class="btn btn-outline btn-sm" onclick="handleSetDefault('${addr.id}')">设为默认</button>` : ''}
         <button class="btn btn-outline btn-sm" onclick="showAddrEditById('${addr.id}')">编辑</button>
         <button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="handleDeleteAddr('${addr.id}')">删除</button>
       </div></div>`;
@@ -464,19 +483,33 @@ function renderAddressList() {
   container.innerHTML = html;
 }
 
-function showAddrEditById(id) { const a = getAddresses().find(x => x.id === id); if (a) showAddrEdit(a); }
-function handleSetDefault(id) { setDefaultAddress(id); selectedAddrId = id; renderAddressList(); refreshSelectedAddr(); showToast('已设为默认地址', 'success'); }
-function handleDeleteAddr(id) {
-  if (!confirm('确定删除这个地址吗？')) return;
-  const addrs = deleteAddress(id);
-  if (selectedAddrId === id) selectedAddrId = addrs.length > 0 ? addrs[0].id : null;
-  renderAddressList(); refreshSelectedAddr(); showToast('地址已删除', 'info');
+async function showAddrEditById(id) {
+  const addrs = await getAddressesAsync();
+  const a = addrs.find(x => x.id === id);
+  if (a) showAddrEdit(a);
 }
 
-// ==================== 订单列表（顾客端查看自己的订单） ====================
-function renderOrdersModal() {
+async function handleSetDefault(id) {
+  await updateAddressAsync(id, { isDefault: true });
+  await renderAddressList();
+  await refreshSelectedAddr();
+  showToast('已设为默认地址', 'success');
+}
+
+async function handleDeleteAddr(id) {
+  if (!confirm('确定删除这个地址吗？')) return;
+  await deleteAddressAsync(id);
+  const addrs = await getAddressesAsync();
+  if (selectedAddrId === id) selectedAddrId = addrs.length > 0 ? addrs[0].id : null;
+  await renderAddressList();
+  await refreshSelectedAddr();
+  showToast('地址已删除', 'info');
+}
+
+// ==================== 订单列表（API） ====================
+async function renderOrdersModal() {
   const body = document.getElementById('ordersBody');
-  const orders = getOrders();
+  const orders = await getOrdersAsync();
   if (!orders.length) {
     body.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">暂无订单</div></div>';
     return;
@@ -490,31 +523,44 @@ function renderOrdersModal() {
       <div class="order-detail-area">${order.area}</div>
       <div class="order-card-items">${(order.items || []).map(it => `<div class="order-card-item">${it.name} x${it.quantity}</div>`).join('')}</div>
       ${order.note ? `<div class="order-card-note">📝 ${order.note}</div>` : ''}
-      <div class="order-card-time">${formatTime(order.createdAt)}</div>
+      <div class="order-card-time">${formatTime(order.created_at)}</div>
     </div>`).join('');
 }
 
 // ==================== 提交订单 ====================
-function submitOrder() {
-  const addr = getAddresses().find(a => a.id === selectedAddrId);
+async function submitOrder() {
+  const addrs = await getAddressesAsync();
+  const addr = addrs.find(a => a.id === selectedAddrId);
   if (!addr) { showToast('请先选择收货地址', 'error'); return; }
   const note = document.getElementById('orderNote').value.trim();
   const cart = getCart();
   if (!cart.length) { showToast('购物车是空的', 'error'); return; }
+
   const groups = {};
   cart.forEach(item => {
     const k = `${item.area}|||${item.store}`;
     if (!groups[k]) groups[k] = [];
     groups[k].push({ name: item.name, quantity: item.quantity });
   });
-  Object.entries(groups).forEach(([k, items]) => {
-    const [area, store] = k.split('|||');
-    addOrder({ area, store, items, customerName: addr.name, customerPhone: addr.phone, customerDorm: addr.dorm, note });
-  });
-  clearCart();
-  updateCartBadge();
-  hideOrderModal();
-  showToast('下单成功！商家已收到订单', 'success');
+
+  try {
+    for (const [k, items] of Object.entries(groups)) {
+      const [area, store] = k.split('|||');
+      await addOrderAsync({
+        area, store, items,
+        customerName: addr.name,
+        customerPhone: addr.phone,
+        customerDorm: addr.dorm,
+        note
+      });
+    }
+    clearCart();
+    updateCartBadge();
+    hideOrderModal();
+    showToast('下单成功！商家已收到订单', 'success');
+  } catch(e) {
+    showToast('下单失败: ' + e.message, 'error');
+  }
 }
 
 // ==================== 启动 ====================

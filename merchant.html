@@ -18,7 +18,10 @@
   <header class="header merchant-header" id="header">
     <a href="customer.html" class="header-back" style="font-size:16px;">&#8592;</a>
     <span class="header-title">商家管理中心</span>
-    <span style="font-size:12px;opacity:0.7;" id="lastRefresh"></span>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:12px;opacity:0.7;" id="lastRefresh"></span>
+      <button id="btnLogout" style="background:none;border:none;color:#fff;font-size:14px;cursor:pointer;">↪</button>
+    </div>
   </header>
 
   <!-- ==================== 顶部导航切换 ==================== -->
@@ -105,6 +108,7 @@
   </div>
 
   <script src="js/data.js"></script>
+  <script src="js/api.js"></script>
   <script src="js/common.js"></script>
   <script src="js/merchant.js"></script>
   <script src="js/menu-manager.js"></script>

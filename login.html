@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>校园点餐 - 登录</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#FF6B35">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .login-page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 40px 24px;
+      background: linear-gradient(180deg, #FFF8F5 0%, #F5F5F5 100%);
+    }
+    .login-logo {
+      font-size: 56px;
+      margin-bottom: 12px;
+    }
+    .login-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: #2D3436;
+      margin-bottom: 4px;
+    }
+    .login-subtitle {
+      font-size: 13px;
+      color: #636E72;
+      margin-bottom: 36px;
+    }
+    .login-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 28px 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      width: 100%;
+      max-width: 360px;
+    }
+    .login-tabs {
+      display: flex;
+      margin-bottom: 24px;
+      border-bottom: 1.5px solid #E8ECF1;
+    }
+    .login-tab {
+      flex: 1;
+      text-align: center;
+      padding: 10px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #B2BEC3;
+      cursor: pointer;
+      position: relative;
+      transition: 0.2s;
+    }
+    .login-tab.active {
+      color: #FF6B35;
+    }
+    .login-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1.5px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 32px;
+      height: 3px;
+      background: #FF6B35;
+      border-radius: 2px;
+    }
+    .login-input-group {
+      margin-bottom: 16px;
+    }
+    .login-input-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #636E72;
+      margin-bottom: 4px;
+      display: block;
+    }
+    .login-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #E8ECF1;
+      border-radius: 10px;
+      font-size: 15px;
+      transition: 0.2s;
+      background: #F5F5F5;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+    .login-input:focus {
+      outline: none;
+      border-color: #FF6B35;
+      background: #fff;
+    }
+    .login-btn {
+      width: 100%;
+      padding: 14px;
+      background: #FF6B35;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: 0.2s;
+    }
+    .login-btn:active {
+      background: #E55A2B;
+      transform: scale(0.98);
+    }
+    .login-btn:disabled {
+      background: #B2BEC3;
+      cursor: not-allowed;
+    }
+    .login-error {
+      color: #E71D36;
+      font-size: 13px;
+      text-align: center;
+      margin-top: 12px;
+      min-height: 20px;
+    }
+    .login-hint {
+      font-size: 11px;
+      color: #B2BEC3;
+      text-align: center;
+      margin-top: 16px;
+      line-height: 1.6;
+    }
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-logo">🍽️</div>
+    <div class="login-title">校园点餐</div>
+    <div class="login-subtitle">手机号登录，随时点餐</div>
+
+    <div class="login-card">
+      <div class="login-tabs">
+        <div class="login-tab active" data-tab="login">登录</div>
+        <div class="login-tab" data-tab="register">注册</div>
+      </div>
+
+      <!-- 注册表单（隐藏） -->
+      <div id="formRegister" class="hidden">
+        <div class="login-input-group">
+          <label class="login-input-label">昵称</label>
+          <input class="login-input" id="regName" placeholder="请输入昵称（选填）" maxlength="15">
+        </div>
+      </div>
+
+      <!-- 公共输入 -->
+      <div class="login-input-group">
+        <label class="login-input-label">手机号</label>
+        <input class="login-input" id="phone" type="tel" placeholder="请输入手机号" maxlength="11">
+      </div>
+      <div class="login-input-group">
+        <label class="login-input-label">密码</label>
+        <input class="login-input" id="password" type="password" placeholder="请输入密码（至少6位）" maxlength="20">
+      </div>
+      <button class="login-btn" id="btnSubmit">登录</button>
+      <div class="login-error" id="loginError"></div>
+      <div class="login-hint">
+        首次使用请先注册<br>
+        商家账号请联系管理员开通
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    let currentTab = 'login';
+
+    document.querySelector('.login-tabs').addEventListener('click', (e) => {
+      const tab = e.target.closest('.login-tab');
+      if (!tab) return;
+      currentTab = tab.dataset.tab;
+      document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('formRegister').classList.toggle('hidden', currentTab === 'login');
+      document.getElementById('btnSubmit').textContent = currentTab === 'login' ? '登录' : '注册';
+      document.getElementById('loginError').textContent = '';
+    });
+
+    document.getElementById('btnSubmit').addEventListener('click', async () => {
+      const phone = document.getElementById('phone').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const name = document.getElementById('regName').value.trim();
+      const errEl = document.getElementById('loginError');
+      errEl.textContent = '';
+
+      if (!/^1[3-9]\d{9}$/.test(phone)) {
+        errEl.textContent = '请输入正确的手机号';
+        return;
+      }
+      if (password.length < 6) {
+        errEl.textContent = '密码至少6位';
+        return;
+      }
+
+      const btn = document.getElementById('btnSubmit');
+      btn.disabled = true;
+      btn.textContent = '处理中...';
+
+      try {
+        if (currentTab === 'login') {
+          const user = await apiLogin(phone, password);
+          if (user.role === 'merchant') {
+            window.location.href = 'merchant.html';
+          } else {
+            window.location.href = 'customer.html';
+          }
+        } else {
+          await apiRegister(phone, password, name || '');
+          window.location.href = 'customer.html';
+        }
+      } catch (e) {
+        errEl.textContent = e.message;
+        btn.disabled = false;
+        btn.textContent = currentTab === 'login' ? '登录' : '注册';
+      }
+    });
+
+    // 回车提交
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('btnSubmit').click();
+    });
+  </script>
+</body>
+</html>

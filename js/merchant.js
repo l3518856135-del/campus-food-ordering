@@ -1,4 +1,4 @@
-// ==================== 商家端逻辑 ====================
+// ==================== 商家端逻辑（API 版） ====================
 
 let currentFilter = 'all';
 let searchKeyword = '';
@@ -6,14 +6,29 @@ let refreshTimer = null;
 let currentMerchantView = 'orders';
 
 // ==================== 初始化 ====================
-function init() {
+async function init() {
+  // 检查登录 & 商家权限
+  if (!isLoggedIn()) {
+    window.location.href = 'login.html';
+    return;
+  }
+  const user = getCurrentUser();
+  if (user.role !== 'merchant') {
+    showToast('需要商家权限', 'error');
+    setTimeout(() => { apiLogout(); window.location.href = 'login.html'; }, 1500);
+    return;
+  }
+
+  // 加载菜单
+  await loadMenuFromAPI();
+
   renderAll();
   bindEvents();
-  // 每5秒自动刷新
-  refreshTimer = setInterval(() => {
-    renderAll();
+  // 每8秒自动刷新订单
+  refreshTimer = setInterval(async () => {
+    await renderAll();
     updateRefreshTime();
-  }, 5000);
+  }, 8000);
 }
 
 function bindEvents() {
@@ -65,33 +80,43 @@ function bindEvents() {
       document.getElementById('inputModal').style.display = 'none';
     }
   });
+
+  // 退出登录
+  const logoutBtn = document.getElementById('btnLogout');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      apiLogout();
+      window.location.href = 'login.html';
+    });
+  }
 }
 
 // ==================== 渲染全部 ====================
-function renderAll() {
-  renderStats();
-  renderOrders();
+async function renderAll() {
+  await renderStats();
+  await renderOrders();
   updateFilterCounts();
 }
 
 function updateRefreshTime() {
   const now = new Date();
-  const time = now.getHours().toString().padStart(2, '0') + ':' + 
-               now.getMinutes().toString().padStart(2, '0') + ':' + 
+  const time = now.getHours().toString().padStart(2, '0') + ':' +
+               now.getMinutes().toString().padStart(2, '0') + ':' +
                now.getSeconds().toString().padStart(2, '0');
   document.getElementById('lastRefresh').textContent = '更新 ' + time;
 }
 
 // ==================== 统计面板 ====================
-function renderStats() {
-  const orders = getOrders();
-  const counts = {
-    pending: orders.filter(o => o.status === 'pending').length,
-    accepted: orders.filter(o => o.status === 'accepted').length,
-    delivering: orders.filter(o => o.status === 'delivering').length,
-    completed: orders.filter(o => o.status === 'completed').length
-  };
+let _cachedOrders = [];
 
+async function renderStats() {
+  _cachedOrders = await getOrdersAsync();
+  const counts = {
+    pending: _cachedOrders.filter(o => o.status === 'pending').length,
+    accepted: _cachedOrders.filter(o => o.status === 'accepted').length,
+    delivering: _cachedOrders.filter(o => o.status === 'delivering').length,
+    completed: _cachedOrders.filter(o => o.status === 'completed').length
+  };
   document.getElementById('statPending').textContent = counts.pending;
   document.getElementById('statAccepted').textContent = counts.accepted;
   document.getElementById('statDelivering').textContent = counts.delivering;
@@ -99,25 +124,17 @@ function renderStats() {
 }
 
 function updateFilterCounts() {
-  const orders = getOrders();
   const counts = {
-    pending: orders.filter(o => o.status === 'pending').length,
-    accepted: orders.filter(o => o.status === 'accepted').length,
-    delivering: orders.filter(o => o.status === 'delivering').length,
-    completed: orders.filter(o => o.status === 'completed').length
+    pending: _cachedOrders.filter(o => o.status === 'pending').length,
+    accepted: _cachedOrders.filter(o => o.status === 'accepted').length,
+    delivering: _cachedOrders.filter(o => o.status === 'delivering').length,
+    completed: _cachedOrders.filter(o => o.status === 'completed').length
   };
+  document.getElementById('countPending').textContent = counts.pending > 0 ? `(${counts.pending})` : '';
+  document.getElementById('countAccepted').textContent = counts.accepted > 0 ? `(${counts.accepted})` : '';
+  document.getElementById('countDelivering').textContent = counts.delivering > 0 ? `(${counts.delivering})` : '';
+  document.getElementById('countCompleted').textContent = counts.completed > 0 ? `(${counts.completed})` : '';
 
-  const elPending = document.getElementById('countPending');
-  const elAccepted = document.getElementById('countAccepted');
-  const elDelivering = document.getElementById('countDelivering');
-  const elCompleted = document.getElementById('countCompleted');
-
-  elPending.textContent = counts.pending > 0 ? `(${counts.pending})` : '';
-  elAccepted.textContent = counts.accepted > 0 ? `(${counts.accepted})` : '';
-  elDelivering.textContent = counts.delivering > 0 ? `(${counts.delivering})` : '';
-  elCompleted.textContent = counts.completed > 0 ? `(${counts.completed})` : '';
-
-  // 待接单标签闪烁
   const pendingTab = document.querySelector('[data-filter="pending"]');
   if (counts.pending > 0 && currentFilter !== 'pending') {
     pendingTab.classList.add('new-order-badge');
@@ -127,9 +144,9 @@ function updateFilterCounts() {
 }
 
 // ==================== 订单列表 ====================
-function renderOrders() {
+async function renderOrders() {
   const container = document.getElementById('orderList');
-  let orders = getOrders();
+  let orders = _cachedOrders;
 
   // 筛选
   if (currentFilter !== 'all') {
@@ -140,11 +157,7 @@ function renderOrders() {
   if (searchKeyword) {
     orders = orders.filter(o => {
       const searchStr = [
-        o.customerName,
-        o.customerPhone,
-        o.store,
-        o.area,
-        o.note || '',
+        o.customer_name, o.customer_phone, o.store, o.area, o.note || '',
         ...(o.items || []).map(i => i.name)
       ].join(' ').toLowerCase();
       return searchStr.includes(searchKeyword);
@@ -152,30 +165,20 @@ function renderOrders() {
   }
 
   if (orders.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-state-icon">📋</div>
-        <div class="empty-state-text">暂无订单</div>
-      </div>
-    `;
+    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">暂无订单</div></div>';
     return;
   }
 
   container.innerHTML = orders.map(order => renderOrderCard(order)).join('');
 
-  // 绑定操作按钮
   container.querySelectorAll('[data-action]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const orderId = btn.dataset.orderId;
-      const action = btn.dataset.action;
-      handleOrderAction(orderId, action);
+      handleOrderAction(btn.dataset.orderId, btn.dataset.action);
     });
   });
 
-  // 绑定查看详情
   container.querySelectorAll('.order-card').forEach(card => {
     card.addEventListener('click', (e) => {
-      // 不拦截按钮点击
       if (e.target.closest('button')) return;
       showOrderDetail(card.dataset.orderId);
     });
@@ -200,12 +203,12 @@ function renderOrderCard(order) {
       <div class="order-detail-store">${order.store}</div>
       <div class="order-detail-area">${order.area}</div>
       <div class="order-card-customer">
-        👤 ${order.customerName} &nbsp; 📱 ${order.customerPhone}
+        👤 ${order.customer_name} &nbsp; 📱 ${order.customer_phone}
       </div>
-      ${order.customerDorm ? `<div class="order-card-dorm">🏠 ${order.customerDorm}</div>` : ''}
+      ${order.customer_dorm ? `<div class="order-card-dorm">🏠 ${order.customer_dorm}</div>` : ''}
       ${order.note ? `<div class="order-card-note">📝 ${order.note}</div>` : ''}
       <div class="order-card-items">${itemsHtml}</div>
-      <div class="order-card-time">${formatTime(order.createdAt)}</div>
+      <div class="order-card-time">${formatTime(order.created_at)}</div>
       <div class="order-card-actions">${actionButtons}</div>
     </div>
   `;
@@ -240,48 +243,43 @@ function getActionButtons(order) {
   return buttons.join('');
 }
 
-function handleOrderAction(orderId, action) {
-  const order = getOrders().find(o => o.id === orderId);
-  if (!order) return;
-
-  let message = '';
-  switch (action) {
-    case 'accept':
-      updateOrderStatus(orderId, ORDER_STATUS.ACCEPTED);
-      message = `已接单：${order.store} - ${order.customerName}`;
-      break;
-    case 'cancel':
-      updateOrderStatus(orderId, ORDER_STATUS.CANCELLED);
-      message = `已拒单：${order.store} - ${order.customerName}`;
-      break;
-    case 'deliver':
-      updateOrderStatus(orderId, ORDER_STATUS.DELIVERING);
-      message = `开始配送：${order.store} - ${order.customerName}`;
-      break;
-    case 'complete':
-      updateOrderStatus(orderId, ORDER_STATUS.COMPLETED);
-      message = `配送完成：${order.store} - ${order.customerName}`;
-      break;
-    case 'delete':
-      if (confirm('确定要删除此订单吗？')) {
-        const orders = getOrders();
-        const idx = orders.findIndex(o => o.id === orderId);
-        if (idx > -1) {
-          orders.splice(idx, 1);
-          saveOrders(orders);
+async function handleOrderAction(orderId, action) {
+  try {
+    let message = '';
+    switch (action) {
+      case 'accept':
+        await updateOrderStatusAsync(orderId, 'accepted');
+        message = '已接单';
+        break;
+      case 'cancel':
+        await updateOrderStatusAsync(orderId, 'cancelled');
+        message = '已拒单';
+        break;
+      case 'deliver':
+        await updateOrderStatusAsync(orderId, 'delivering');
+        message = '开始配送';
+        break;
+      case 'complete':
+        await updateOrderStatusAsync(orderId, 'completed');
+        message = '配送完成';
+        break;
+      case 'delete':
+        if (confirm('确定要删除此订单吗？')) {
+          await deleteOrderAsync(orderId);
           message = '订单已删除';
         }
-      }
-      break;
+        break;
+    }
+    await renderAll();
+    if (message) showToast(message, 'success');
+  } catch(e) {
+    showToast('操作失败: ' + e.message, 'error');
   }
-
-  renderAll();
-  if (message) showToast(message, 'success');
 }
 
 // ==================== 订单详情 ====================
 function showOrderDetail(orderId) {
-  const order = getOrders().find(o => o.id === orderId);
+  const order = _cachedOrders.find(o => o.id === orderId);
   if (!order) return;
 
   const modal = document.getElementById('detailModal');
@@ -303,11 +301,11 @@ function showOrderDetail(orderId) {
       <div class="order-detail-area">${order.area}</div>
     </div>
     <div style="font-size:13px;margin-bottom:10px;color:var(--text-light);">
-      <div>👤 ${order.customerName}</div>
-      <div>📱 ${order.customerPhone}</div>
-      ${order.customerDorm ? `<div>🏠 ${order.customerDorm}</div>` : ''}
+      <div>👤 ${order.customer_name}</div>
+      <div>📱 ${order.customer_phone}</div>
+      ${order.customer_dorm ? `<div>🏠 ${order.customer_dorm}</div>` : ''}
       ${order.note ? `<div>📝 ${order.note}</div>` : ''}
-      <div style="margin-top:4px;">🕐 ${formatTime(order.createdAt)}</div>
+      <div style="margin-top:4px;">🕐 ${formatTime(order.created_at)}</div>
     </div>
     <div class="order-summary">${itemsHtml}</div>
     <div class="order-card-actions" style="margin-top:12px;justify-content:center;">
@@ -317,7 +315,6 @@ function showOrderDetail(orderId) {
       onclick="document.getElementById('detailModal').style.display='none'">关闭</button>
   `;
 
-  // 绑定详情中的操作按钮
   content.querySelectorAll('[data-action]').forEach(btn => {
     btn.addEventListener('click', () => {
       handleOrderAction(orderId, btn.dataset.action);
@@ -331,7 +328,6 @@ function showOrderDetail(orderId) {
 // ==================== 启动 ====================
 document.addEventListener('DOMContentLoaded', init);
 
-// 页面关闭时清理定时器
 window.addEventListener('beforeunload', () => {
   if (refreshTimer) clearInterval(refreshTimer);
 });

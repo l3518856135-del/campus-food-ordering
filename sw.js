@@ -3,10 +3,12 @@ const CACHE_NAME = 'campus-order-v1';
 const ASSETS = [
   '/',
   '/index.html',
+  '/login.html',
   '/customer.html',
   '/merchant.html',
   '/css/style.css',
   '/js/data.js',
+  '/js/api.js',
   '/js/common.js',
   '/js/customer.js',
   '/js/merchant.js',

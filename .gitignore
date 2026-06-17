@@ -22,3 +22,17 @@ npm-debug.log*
 .cache/
 *.pyc
 __pycache__/
+
+# Node.js
+node_modules/
+package-lock.json
+
+# Cloudflare
+.wrangler/
+backend/.wrangler/
+
+# Capacitor (Android 构建产物行数太多，不提交)
+android/
+
+# www 目录（从源文件复制，不需要提交）
+www/

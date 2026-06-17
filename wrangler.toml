@@ -1,0 +1,9 @@
+# Cloudflare Pages 配置
+name = "campus-order"
+pages_build_output_dir = "."
+
+# D1 数据库绑定
+[[d1_databases]]
+binding = "DB"
+database_name = "campus-order-db"
+database_id = "42bdd43a-7491-420b-b099-740cf127b31f"
